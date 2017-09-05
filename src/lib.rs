@@ -22,15 +22,7 @@ impl AtomicCounter for AtomicUsize {
     }
 
     fn reset(&self) -> usize {
-        let mut last_value = 0;
-        loop {
-            let ret = self.compare_and_swap(last_value, 0, Relaxed);
-            if ret == last_value {
-                break;
-            }
-            last_value = ret;
-        }
-        last_value
+        self.swap(0, Relaxed)
     }
 }
 
