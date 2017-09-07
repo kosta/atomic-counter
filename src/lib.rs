@@ -1,8 +1,8 @@
 
 use std::sync::atomic::AtomicUsize;
-use std::sync::atomic::Ordering::Relaxed;
+use std::sync::atomic::Ordering::{Relaxed, SeqCst};
 
-trait AtomicCounter {
+pub trait AtomicCounter {
     type PrimitiveType;
 
     fn inc(&self);
@@ -10,7 +10,16 @@ trait AtomicCounter {
     fn reset(&self) -> Self::PrimitiveType;
 }
 
-impl AtomicCounter for AtomicUsize {
+#[derive(Debug, Default)]
+pub struct RelaxedCounter(AtomicUsize);
+
+impl RelaxedCounter {
+    pub fn new(initial_count: usize) -> RelaxedCounter {
+        RelaxedCounter(AtomicUsize::new(initial_count))
+    }
+}
+
+impl AtomicCounter for RelaxedCounter {
     type PrimitiveType = usize;
 
     fn inc(&self) {
@@ -18,11 +27,36 @@ impl AtomicCounter for AtomicUsize {
     }
 
     fn add(&self, amount: usize) {
-        self.fetch_add(amount, Relaxed);
+        self.0.fetch_add(amount, Relaxed);
     }
 
     fn reset(&self) -> usize {
-        self.swap(0, Relaxed)
+        self.0.swap(0, Relaxed)
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct ConsistentCounter(AtomicUsize);
+
+impl ConsistentCounter {
+    pub fn new(initial_count: usize) -> ConsistentCounter {
+        ConsistentCounter(AtomicUsize::new(initial_count))
+    }
+}
+
+impl AtomicCounter for ConsistentCounter {
+    type PrimitiveType = usize;
+
+    fn inc(&self) {
+        self.add(1)
+    }
+
+    fn add(&self, amount: usize) {
+        self.0.fetch_add(amount, SeqCst);
+    }
+
+    fn reset(&self) -> usize {
+        self.0.swap(0, SeqCst)
     }
 }
 
@@ -41,13 +75,13 @@ mod tests {
     #[test]
     fn test_inc() {
         let mut join_handles = Vec::new();
-        let counter = Arc::new(AtomicUsize::new(0));
+        let counter = Arc::new(RelaxedCounter::new(0));
         println!("test_inc: Spawning {} threads, each with {} iterations...", NUM_THREADS, NUM_ITERATIONS);
         for _ in 0..NUM_THREADS {
             let counter_ref = counter.clone();
             join_handles.push(thread::spawn(move || {
                 //make sure we're not going though Arc on each iteration
-                let counter: &AtomicUsize = counter_ref.deref();
+                let counter: &RelaxedCounter = counter_ref.deref();
                 for _ in 0..NUM_ITERATIONS {
                     counter.inc();
                 }
@@ -64,7 +98,7 @@ mod tests {
     #[test]
     fn test_add() {
         let mut join_handles = Vec::new();
-        let counter = Arc::new(AtomicUsize::new(0));
+        let counter = Arc::new(RelaxedCounter::new(0));
         println!("test_add: Spawning {} threads, each with {} iterations...", NUM_THREADS, NUM_ITERATIONS);
         let mut expected_count = 0;
         for to_add in 0..NUM_THREADS {
@@ -72,7 +106,7 @@ mod tests {
             expected_count += to_add * NUM_ITERATIONS;
             join_handles.push(thread::spawn(move || {
                 //make sure we're not going though Arc on each iteration
-                let counter: &AtomicUsize = counter_ref.deref();
+                let counter: &RelaxedCounter = counter_ref.deref();
                 for _ in 0..NUM_ITERATIONS {
                     counter.add(to_add);
                 }
@@ -89,7 +123,7 @@ mod tests {
     #[test]
     fn test_add_reset() {
         let mut join_handles = Vec::new();
-        let counter = Arc::new(AtomicUsize::new(0));
+        let counter = Arc::new(RelaxedCounter::new(0));
         println!("test_add_reset: Spawning {} threads, each with {} iterations...", NUM_THREADS, NUM_ITERATIONS);
         let mut expected_count = 0;
         for to_add in 0..NUM_THREADS {
@@ -103,7 +137,7 @@ mod tests {
             // I don't want to pollute my test with thread synchronization
             // operations outside of AtomicCounter, hence this approach.
             let mut total_count = 0;
-            let counter: &AtomicUsize = counter_ref.deref();
+            let counter: &RelaxedCounter = counter_ref.deref();
             while total_count < expected_count {
                 total_count += counter.reset();
             }
@@ -120,7 +154,7 @@ mod tests {
 
             join_handles.push(thread::spawn(move || {
                 //make sure we're not going though Arc on each iteration
-                let counter: &AtomicUsize = counter_ref.deref();
+                let counter: &RelaxedCounter = counter_ref.deref();
                 for _ in 0..NUM_ITERATIONS {
                     counter.add(to_add);
                 }
