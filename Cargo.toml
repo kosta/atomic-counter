@@ -2,5 +2,10 @@
 name = "atomic-counter"
 version = "0.1.0"
 authors = ["Kosta Welke <theoneandonlykosta@gmail.com>"]
+description = "Atomic (thread-safe) counters for Rust"
+documentation = "https://docs.rs/atomic-counter"
+repository = "https://github.com/kosta/atomic-counter"
+readme = "Readme.md"
+license = "MIT"
 
 [dependencies]
