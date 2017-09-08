@@ -1,6 +1,6 @@
 [package]
 name = "atomic-counter"
 version = "0.1.0"
-authors = ["Kosta Welke <kw@trinatives.com>"]
+authors = ["Kosta Welke <theoneandonlykosta@gmail.com>"]
 
 [dependencies]
