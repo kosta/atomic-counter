@@ -88,11 +88,11 @@ pub trait AtomicCounter: Send + Sync {
     /// Underlying primitive type that is being shared atomically.
     type PrimitiveType;
 
-    /// Atomically increments the counter by one.
-    fn inc(&self);
+    /// Atomically increments the counter by one, returning the _previous_ value.
+    fn inc(&self) -> Self::PrimitiveType;
 
-    /// Atomically increments the counter by amount.
-    fn add(&self, amount: Self::PrimitiveType);
+    /// Atomically increments the counter by amount, returning the _previous_ value.
+    fn add(&self, amount: Self::PrimitiveType) -> Self::PrimitiveType;
 
     /// Atomically gets the current value of the counter, without modifying the counter.
     fn get(&self) -> Self::PrimitiveType;
@@ -127,12 +127,12 @@ impl RelaxedCounter {
 impl AtomicCounter for RelaxedCounter {
     type PrimitiveType = usize;
 
-    fn inc(&self) {
+    fn inc(&self) -> usize {
         self.add(1)
     }
 
-    fn add(&self, amount: usize) {
-        self.0.fetch_add(amount, Relaxed);
+    fn add(&self, amount: usize) -> usize {
+        self.0.fetch_add(amount, Relaxed)
     }
 
     fn get(&self) -> usize {
@@ -169,12 +169,12 @@ impl ConsistentCounter {
 impl AtomicCounter for ConsistentCounter {
     type PrimitiveType = usize;
 
-    fn inc(&self) {
+    fn inc(&self) -> usize {
         self.add(1)
     }
 
-    fn add(&self, amount: usize) {
-        self.0.fetch_add(amount, SeqCst);
+    fn add(&self, amount: usize) -> usize {
+        self.0.fetch_add(amount, SeqCst)
     }
 
     fn get(&self) -> usize {
@@ -202,6 +202,28 @@ mod tests {
 
     const NUM_THREADS: usize = 29;
     const NUM_ITERATIONS: usize = 7_000_000;
+
+    fn test_simple_with<Counter>(counter: Counter)
+        where Counter: AtomicCounter<PrimitiveType=usize>
+    {
+        counter.reset();
+        assert_eq!(0, counter.add(5));
+        assert_eq!(5, counter.add(3));
+        assert_eq!(8, counter.inc());
+        assert_eq!(9, counter.inc());
+        assert_eq!(10, counter.get());
+        assert_eq!(10, counter.get());
+    }
+
+    #[test]
+    fn test_simple_relaxed() {
+        test_simple_with(RelaxedCounter::new(0))
+    }
+
+    #[test]
+    fn test_simple_consistent() {
+        test_simple_with(ConsistentCounter::new(0))
+    }
 
     fn test_inc_with<Counter>(counter: Arc<Counter>)
         where Counter: AtomicCounter<PrimitiveType=usize> + 'static + Debug
