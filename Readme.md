@@ -32,7 +32,7 @@
 
  * If you are generating multiple IDs where you maintain an ordering
      invariant (e.g. ID `a` is always greater than ID `b`), you need "Sequential
-     Consistency" and thus need to use `SequentialCounter`. The same is true
+     Consistency" and thus need to use `ConsistentCounter`. The same is true
      for all use cases where the _ordering_ of incrementing the counter is
      important.
 
