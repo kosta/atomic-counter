@@ -1,6 +1,4 @@
- # AtomicCounter \
-   [![docs.rs](https://docs.rs/atomic-counter/badge.svg)](https://docs.rs/atomic-counter) \
-   [![Build Status](https://travis-ci.com/kosta/atomic-counter.svg?branch=master)](https://travis-ci.com/kosta/atomic-counter)
+ # AtomicCounter [![docs.rs](https://docs.rs/atomic-counter/badge.svg)](https://docs.rs/atomic-counter) [![Build Status](https://travis-ci.com/kosta/atomic-counter.svg?branch=master)](https://travis-ci.com/kosta/atomic-counter)
 
  Atomic (thread-safe) counters for Rust.
 
