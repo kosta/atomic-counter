@@ -119,7 +119,7 @@ pub struct RelaxedCounter(AtomicUsize);
 impl RelaxedCounter {
 
     /// Creates a new counter with initial_value
-    pub fn new(initial_count: usize) -> RelaxedCounter {
+    pub const fn new(initial_count: usize) -> RelaxedCounter {
         RelaxedCounter(AtomicUsize::new(initial_count))
     }
 }
@@ -161,7 +161,7 @@ pub struct ConsistentCounter(AtomicUsize);
 impl ConsistentCounter {
 
     /// Creates a new counter with initial_value
-    pub fn new(initial_count: usize) -> ConsistentCounter {
+    pub const fn new(initial_count: usize) -> ConsistentCounter {
         ConsistentCounter(AtomicUsize::new(initial_count))
     }
 }
